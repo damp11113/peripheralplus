@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "facing=north": { "model": "peripheralplus:block/distance_sensor" },
+    "facing=south": { "model": "peripheralplus:block/distance_sensor", "y": 180 },
+    "facing=west": { "model": "peripheralplus:block/distance_sensor", "y": 270 },
+    "facing=east": { "model": "peripheralplus:block/distance_sensor", "y": 90 },
+    "facing=up": { "model": "peripheralplus:block/distance_sensor", "x": -90 },
+    "facing=down": { "model": "peripheralplus:block/distance_sensor", "x": 90 }
+  }
+}
