@@ -5,39 +5,17 @@ import dev.dpsoftware.peripheralplus.common.computercraft.peripherals.DistanceSe
 import dev.dpsoftware.peripheralplus.common.minecraft.blockEntitys.PeripheralBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraft.world.phys.AABB;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.List;
 
 public class DistanceSensorTileEntity extends BlockEntity implements PeripheralBlockEntity {
     private DistanceSensorPeripheral peripheral;
 
-    private String detectionMode = "block"; // Default mode
-
     public DistanceSensorTileEntity(BlockPos pos, BlockState state) {
         super(ModTileEntities.DISTANCE_SENSOR.get(), pos, state);
-    }
-
-    /**
-     * Get the detection mode (e.g., "player", "mob", "block").
-     */
-    public String getDetectionMode() {
-        return detectionMode;
-    }
-
-    /**
-     * Set the detection mode (e.g., "player", "mob", "block").
-     */
-    public void setDetectionMode(String mode) {
-        this.detectionMode = mode;
     }
 
     /**

@@ -5,7 +5,6 @@ import dan200.computercraft.api.lua.LuaFunction;
 import dan200.computercraft.api.peripheral.IPeripheral;
 import dev.dpsoftware.peripheralplus.common.minecraft.blockEntitys.TileEntity.DistanceSensorTileEntity;
 import dev.dpsoftware.peripheralplus.common.computercraft.ModPeripheral;
-import net.minecraft.core.Direction;
 import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.Nonnull;
