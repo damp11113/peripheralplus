@@ -1,5 +1,5 @@
 # Peripheral+
-Adding real world sensor to computercraft!
+Adding real world sensor to computercraft! now available for only 1.20.1 forge
 
 # Distance sensor
 This sensor will scan the front.
