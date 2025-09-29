@@ -20,6 +20,12 @@ public class ModBlocks {
     public static final RegistryObject<Block> DISTANCE_SENSOR = BLOCKS.register("distance_sensor",
             () -> new DistanceSensor(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)));
 
+    public static final RegistryObject<Block> LIDAR_SENSOR = BLOCKS.register("lidar_sensor",
+            () -> new LidarSensor(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)));
+
+    public static final RegistryObject<Block> IMU_SENSOR = BLOCKS.register("imu_sensor",
+            () -> new IMUSensor(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)));
+
     private static <T extends Block> RegistryObject<T> registerBlock(String name, Supplier<T> block) {
         RegistryObject<T> toReturn = BLOCKS.register(name, block);
         registerBlockItem(name, toReturn);

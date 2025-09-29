@@ -5,11 +5,17 @@ import dev.dpsoftware.peripheralplus.common.computercraft.peripherals.DistanceSe
 import dev.dpsoftware.peripheralplus.common.minecraft.blockEntitys.PeripheralBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.phys.AABB;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.List;
 
 public class DistanceSensorTileEntity extends BlockEntity implements PeripheralBlockEntity {
     private DistanceSensorPeripheral peripheral;
@@ -18,25 +24,65 @@ public class DistanceSensorTileEntity extends BlockEntity implements PeripheralB
         super(ModTileEntities.DISTANCE_SENSOR.get(), pos, state);
     }
 
-    /**
-     * Get distance to the closest block in front of the sensor within a range of 20 blocks.
-     */
-    public int getDistance(Level world, BlockPos pos) {
+    public int getDistance(Level world, BlockPos pos, int range, int mode) {
+        // mode
+        // 0 = all (Any Entity (include player) + Block)
+        // 1 = Only block
+        // 2 = only any entity not player
+        // 3 = only player
+        // 4 = only mob
+        // 5 = any entity include player
+
         BlockState state = world.getBlockState(pos);
-        Direction facing = state.getValue(BlockStateProperties.FACING);  // Get the block's facing direction
+        Direction facing = state.getValue(BlockStateProperties.FACING);
         BlockPos.MutableBlockPos checkPos = pos.mutable();
 
-        for (int i = 1; i <= 20; i++) {
-            checkPos.set(pos).move(facing, i);  // Move in the direction the sensor is facing
+        for (int i = 1; i <= range; i++) {
+            checkPos.set(pos).move(facing, i);
             BlockState blockState = world.getBlockState(checkPos);
 
-            // Skip if it's air or any other "empty" block
-            if (!blockState.isAir()) {
-                return i;  // Return the distance to the detected block
+            // Check for blocks (modes 0 and 1)
+            if ((mode == 0 || mode == 1) && !blockState.isAir()) {
+                return i;
+            }
+
+            // Check for entities (modes 0, 2, 3, 4, 5)
+            if (mode != 1) {
+                // Create a bounding box for the current position
+                AABB boundingBox = new AABB(checkPos).inflate(0.1);
+                List<Entity> entities = world.getEntitiesOfClass(Entity.class, boundingBox);
+
+                for (Entity entity : entities) {
+                    switch (mode) {
+                        case 0: // All entities + blocks
+                            return i;
+
+                        case 2: // Any entity except player
+                            if (!(entity instanceof Player)) {
+                                return i;
+                            }
+                            break;
+
+                        case 3: // Only player
+                            if (entity instanceof Player) {
+                                return i;
+                            }
+                            break;
+
+                        case 4: // Only mobs
+                            if (entity instanceof Mob) {
+                                return i;
+                            }
+                            break;
+
+                        case 5: // Any entity including player
+                            return i;
+                    }
+                }
             }
         }
 
-        return -1;  // Return -1 if no block is detected within 20 blocks
+        return -1; // No detection within range
     }
 
     public IPeripheral getPeripheral(@NotNull Direction side) {

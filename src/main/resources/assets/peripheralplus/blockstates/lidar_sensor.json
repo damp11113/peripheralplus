@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "facing=north": { "model": "peripheralplus:block/lidar_sensor" },
+    "facing=south": { "model": "peripheralplus:block/lidar_sensor", "y": 180 },
+    "facing=west": { "model": "peripheralplus:block/lidar_sensor", "y": 270 },
+    "facing=east": { "model": "peripheralplus:block/lidar_sensor", "y": 90 },
+    "facing=up": { "model": "peripheralplus:block/lidar_sensor", "x": -90 },
+    "facing=down": { "model": "peripheralplus:block/lidar_sensor", "x": 90 }
+  }
+}

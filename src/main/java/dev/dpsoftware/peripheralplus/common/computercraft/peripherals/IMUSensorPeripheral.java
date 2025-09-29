@@ -4,21 +4,21 @@ import dan200.computercraft.api.lua.LuaException;
 import dan200.computercraft.api.lua.LuaFunction;
 import dan200.computercraft.api.peripheral.IPeripheral;
 import dev.dpsoftware.peripheralplus.common.computercraft.ModPeripheral;
-import dev.dpsoftware.peripheralplus.common.minecraft.blockEntitys.TileEntity.DistanceSensorTileEntity;
+import dev.dpsoftware.peripheralplus.common.minecraft.blockEntitys.TileEntity.IMUSensorTileEntity;
 import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.Nonnull;
 
-public class DistanceSensorPeripheral extends ModPeripheral<DistanceSensorTileEntity> {
+public class IMUSensorPeripheral extends ModPeripheral<IMUSensorTileEntity> {
 
-    public DistanceSensorPeripheral(@Nullable DistanceSensorTileEntity blockEntity) {
-        super("distance_sensor", blockEntity);
+    public IMUSensorPeripheral(@Nullable IMUSensorTileEntity blockEntity) {
+        super("imu_sensor", blockEntity);
     }
 
     @Override
     @Nonnull
     public String getType() {
-        return "distance_sensor";
+        return "imu_sensor";
     }
 
     /**
@@ -27,10 +27,10 @@ public class DistanceSensorPeripheral extends ModPeripheral<DistanceSensorTileEn
      * @return The distance value measured by the sensor.
      */
     @LuaFunction
-    public final int scan(int range, int mode) throws LuaException {
-        DistanceSensorTileEntity be = getTarget();
+    public final int scan() throws LuaException {
+        IMUSensorTileEntity be = getTarget();
         if (be != null) {
-            return be.getDistance(be.getLevel(), be.getBlockPos(), range, mode);
+            return -1;
         }
         return -1;
     }

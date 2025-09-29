@@ -15,6 +15,12 @@ public class ModItems {
     public static final RegistryObject<Item> DISTANCE_SENSOR = ITEMS.register("distance_sensor",
             () -> new BlockItem(ModBlocks.DISTANCE_SENSOR.get(), new Item.Properties()));
 
+    public static final RegistryObject<Item> LIDAR_SENSOR = ITEMS.register("lidar_sensor",
+            () -> new BlockItem(ModBlocks.LIDAR_SENSOR.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> IMU_SENSOR = ITEMS.register("imu_sensor",
+            () -> new BlockItem(ModBlocks.IMU_SENSOR.get(), new Item.Properties()));
+
     public static final RegistryObject<Item> TEST = ITEMS.register("test", () -> new Item(new Item.Properties()));
 
     public static void register(IEventBus eventBus) {

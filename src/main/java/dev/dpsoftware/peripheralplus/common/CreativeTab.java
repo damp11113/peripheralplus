@@ -1,7 +1,7 @@
 package dev.dpsoftware.peripheralplus.common;
 
-import dev.dpsoftware.peripheralplus.PeripheralPlus;
 import dev.dpsoftware.peripheralplus.common.minecraft.items.ModItems;
+import dev.dpsoftware.peripheralplus.PeripheralPlus;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;
@@ -19,6 +19,8 @@ public class CreativeTab {
                     .displayItems((pParameters, pOutput) -> {
                         pOutput.accept(ModItems.TEST.get());
                         pOutput.accept(ModItems.DISTANCE_SENSOR.get());
+                        pOutput.accept(ModItems.LIDAR_SENSOR.get());
+                        pOutput.accept(ModItems.IMU_SENSOR.get());
                     })
                     .build()
     );

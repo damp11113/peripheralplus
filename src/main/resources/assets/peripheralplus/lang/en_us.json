@@ -1,5 +1,7 @@
 {
   "creativetab.peripheralplus_tab": "Peripheral+",
 
-  "block.peripheralplus.distance_sensor": "Distance Sensor"
+  "block.peripheralplus.distance_sensor": "Distance Sensor",
+  "block.peripheralplus.lidar_sensor": "Lidar Sensor",
+  "block.peripheralplus.imu_sensor": "IMU Sensor"
 }

@@ -12,6 +12,7 @@ plugins {
     id 'eclipse'
     id 'idea'
     id 'net.minecraftforge.gradle' version '[6.0,6.2)'
+    id "com.github.johnrengelman.shadow" version "7.0.0"
 }
 
 apply plugin: 'org.spongepowered.mixin'
@@ -132,6 +133,7 @@ mixin {
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 repositories {
+    mavenCentral()
     // Put repositories for dependencies here
     // ForgeGradle automatically adds the Forge maven and Maven Central for you
 
@@ -142,12 +144,20 @@ repositories {
     // }
 
     maven {
+        url = 'https://repo.spongepowered.org/repository/maven-public/'
+    }
+
+    // Existing repositories
+    maven {
         url "https://maven.squiddev.cc"
         content {
             includeGroup("cc.tweaked")
         }
     }
-
+    maven {
+        name = "Valkyrien Skies Internal"
+        url = 'https://maven.valkyrienskies.org'
+    }
 }
 
 dependencies {
@@ -178,6 +188,25 @@ dependencies {
     compileOnly("cc.tweaked:cc-tweaked-${minecraft_version}-core-api:${cctVersion}")
     compileOnly(fg.deobf("cc.tweaked:cc-tweaked-${minecraft_version}-forge-api:${cctVersion}"))
     runtimeOnly(fg.deobf("cc.tweaked:cc-tweaked-${minecraft_version}-forge:${cctVersion}"))
+
+    // VALKYRIEN SKIES FIX: Exclude the bundled Joml library
+    // The exact group/module might need to be adjusted based on the VS dependency tree.
+    implementation("org.valkyrienskies:valkyrienskies-120-forge:$vs2_version") {
+        exclude group: 'org.joml', module: 'joml' // Attempt to exclude a specific Joml JAR
+    }
+
+    implementation("org.valkyrienskies.core:api:$vs_core_version") {
+        exclude group: 'org.joml', module: 'joml'
+    }
+    implementation("org.valkyrienskies.core:api-game:$vs_core_version") {
+        exclude group: 'org.joml', module: 'joml'
+    }
+    implementation("org.valkyrienskies.core:util:$vs_core_version") {
+        exclude group: 'org.joml', module: 'joml'
+    }
+    implementation("org.valkyrienskies.core:impl:$vs_core_version") {
+        exclude group: 'org.joml', module: 'joml'
+    }
 }
 
 // This block of code expands all declared replace properties in the specified resource targets.
@@ -220,4 +249,35 @@ tasks.named('jar', Jar).configure {
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
+}
+
+tasks.register('runClientOnMultiMC') {
+    group = 'custom'
+    description = 'Builds the jar, copies it to a target directory, and executes a command'
+
+    // Depend on the reobfJar task to ensure the jar is built first
+    dependsOn 'reobfJar'
+
+    doLast {
+        // Define your target path here
+        def targetPath = file('D:/MultiMC/instances/ccIDE-Expermental/.minecraft/mods')
+
+        // Create the directory if it doesn't exist
+        targetPath.mkdirs()
+
+        // Get the output jar file from the reobfJar task
+        def jarFile = tasks.jar.outputs.files.singleFile
+
+        // Copy the jar to the target directory
+        copy {
+            from jarFile
+            into targetPath
+        }
+
+        println "Copied ${jarFile.name} to ${targetPath}"
+
+        exec {
+            commandLine 'D:\\MultiMC\\MultiMC.exe', '-d', 'D:\\MultiMC', '-l', 'ccIDE-Expermental', '-w', 'New World'
+        }
+    }
 }
