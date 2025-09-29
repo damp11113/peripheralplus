@@ -5,7 +5,7 @@ import dan200.computercraft.api.lua.LuaFunction;
 import dan200.computercraft.api.peripheral.IPeripheral;
 import dev.dpsoftware.peripheralplus.common.computercraft.ModPeripheral;
 import dev.dpsoftware.peripheralplus.common.minecraft.blockEntitys.TileEntity.LidarSensorTileEntity;
-import dev.dpsoftware.peripheralplus.Quat;
+import dev.dpsoftware.peripheralplus.ppQuat;
 import net.minecraft.core.BlockPos;
 import org.jetbrains.annotations.Nullable;
 
@@ -24,7 +24,8 @@ public class LidarSensorPeripheral extends ModPeripheral<LidarSensorTileEntity> 
     private int multiline = 1;
     private boolean use_custom_pos = false;
 
-    private Quat rotation = new Quat(0, 0, 0, 0);
+    private ppQuat rotation = new ppQuat(0, 0, 0, 0);
+
 
     public LidarSensorPeripheral(@Nullable LidarSensorTileEntity blockEntity) {
         super("lidar_sensor", blockEntity);
@@ -68,7 +69,7 @@ public class LidarSensorPeripheral extends ModPeripheral<LidarSensorTileEntity> 
 
     @LuaFunction
     public final void set_rotation(int x, int y, int z, int w, int multiple) {
-        rotation = new Quat((float) x/multiple, (float) y/multiple, (float) z/multiple, (float) w/multiple);
+        rotation = new ppQuat((float) x/multiple, (float) y/multiple, (float) z/multiple, (float) w/multiple);
     }
 
     @LuaFunction

@@ -5,20 +5,15 @@ import dev.dpsoftware.peripheralplus.common.CreativeTab;
 import dev.dpsoftware.peripheralplus.common.minecraft.blockEntitys.TileEntity.ModTileEntities;
 import dev.dpsoftware.peripheralplus.common.minecraft.items.ModItems;
 import dev.dpsoftware.peripheralplus.common.minecraft.blocks.ModBlocks;
-import net.minecraft.client.Minecraft;
-import net.minecraft.world.item.CreativeModeTabs;
+import net.minecraft.world.phys.HitResult;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
-
-import java.util.ArrayList;
 
 // The value here should match an entry in the META-INF/mods.toml file
 @Mod(PeripheralPlus.MODID)
@@ -26,6 +21,9 @@ public class PeripheralPlus {
 
     public static final String MODID = "peripheralplus";
     public static final Logger LOGGER = LogUtils.getLogger();
+
+    private static HitResult lastHit = null;
+    private static int tickCounter = 0;
 
     public PeripheralPlus() {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();

@@ -1,20 +1,27 @@
 package dev.dpsoftware.peripheralplus.common.minecraft.blockEntitys.TileEntity;
 
 import dan200.computercraft.api.peripheral.IPeripheral;
-import dev.dpsoftware.peripheralplus.Vec3;
+import dev.dpsoftware.peripheralplus.ppVec3;
 import dev.dpsoftware.peripheralplus.common.minecraft.blockEntitys.PeripheralBlockEntity;
-import dev.dpsoftware.peripheralplus.Quat;
+import dev.dpsoftware.peripheralplus.ppQuat;
 import dev.dpsoftware.peripheralplus.common.computercraft.peripherals.LidarSensorPeripheral;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
+import org.joml.Quaterniond;
+import org.joml.Quaternionf;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -29,14 +36,14 @@ public class LidarSensorTileEntity extends BlockEntity implements PeripheralBloc
     }
 
     public static class DetectionResult {
-        public final int distance;
+        public final double distance;
         public final String objectType;
         public final String objectName;
         public final int yLine; // Added to track which Y level this detection is from
 
         public final int angle;
 
-        public DetectionResult(int distance, String objectType, String objectName, int yLine, int angle) {
+        public DetectionResult(double distance, String objectType, String objectName, int yLine, int angle) {
             this.distance = distance;
             this.objectType = objectType;
             this.objectName = objectName;
@@ -59,135 +66,135 @@ public class LidarSensorTileEntity extends BlockEntity implements PeripheralBloc
         }
     }
 
-    public List<DetectionResult> getLidarScan360(Level world, BlockPos pos, BlockPos pos2e, int range, int mode, int angleStep, int multiline, Quat rotation) {
+    public List<DetectionResult> getLidarScan360(Level world, BlockPos pos, BlockPos pos2e, int range, int mode, int angleStep, int multiline, ppQuat rotation) {
         List<DetectionResult> results = new ArrayList<>();
 
         // Normalize the quaternion to ensure proper rotation
-        Quat normalizedRotation = rotation.normalize();
+        ppQuat normalizedRotation = rotation.normalize();
+        BlockState state = world.getBlockState(pos2e);
+        Direction facing = state.getValue(BlockStateProperties.FACING);
+
+        // Create a quaternion for the facing direction
+        ppQuat facingRotation = getFacingQuaternion(facing);
+
+        // Combine facing rotation with the input rotation
+        ppQuat combinedRotation = ppQuat.fromMCQuat(facingRotation.mcQuat().mul(normalizedRotation.mcQuat()));
 
         // Scan in multiple horizontal directions based on angle step
         for (int angle = 0; angle < 360; angle += angleStep) {
             double radians = Math.toRadians(angle);
 
             // Create initial direction vector (unit vector in XZ plane)
-            Vec3 direction = new Vec3(Math.cos(radians), 0, Math.sin(radians));
+            ppVec3 direction = new ppVec3(Math.cos(radians), 0, Math.sin(radians));
 
-            // Apply quaternion rotation to the direction
-            Vec3 rotatedDirection = normalizedRotation.rotate(direction);
+            // Apply combined rotation (facing + custom rotation) to the direction
+            ppVec3 rotatedDirection = combinedRotation.rotate(direction);
 
             // Calculate the actual output angle from the rotated direction
             int outputAngle = calculateAngleFromDirection(rotatedDirection);
 
-            List<DetectionResult> directionResults = scanCustomDirection(world, pos, pos2e, rotatedDirection, range, mode, outputAngle, multiline, normalizedRotation);
+            List<DetectionResult> directionResults = scanCustomDirection(world, pos, pos2e, rotatedDirection.mcVec3(), range, mode, angle, outputAngle, multiline, combinedRotation);
             results.addAll(directionResults);
         }
 
         return results;
     }
 
-    private List<DetectionResult> scanCustomDirection(Level world, BlockPos pos, BlockPos pos2e, Vec3 direction, int range, int mode, int angle, int multiline, Quat rotation) {
+    // Helper method to convert Direction to Quaternion rotation
+    private ppQuat getFacingQuaternion(Direction facing) {
+        return switch (facing) {
+            case NORTH -> ppQuat.fromXYZ(0, 0, 0, 1);  // No rotation (0°)
+            case SOUTH -> ppQuat.fromXYZ(0, (float) Math.PI, 0, 1);  // 180° around Y
+            case WEST -> ppQuat.fromXYZ(0, (float) Math.PI / 2, 0, 1);  // 90° around Y
+            case EAST -> ppQuat.fromXYZ(0, (float) -Math.PI / 2, 0, 1);  // -90° around Y
+            case UP -> ppQuat.fromXYZ((float) -Math.PI / 2, 0, 0, 1);  // -90° around X
+            case DOWN -> ppQuat.fromXYZ((float) Math.PI / 2, 0, 0, 1);  // 90° around X
+        };
+    }
+
+    private List<DetectionResult> scanCustomDirection(Level world, BlockPos pos, BlockPos pos2e, Vec3 direction, int range, int mode, int angle, int angle2, int multiline, ppQuat rotation) {
         List<DetectionResult> results = new ArrayList<>();
         List<Integer> yOffsets = calculateYOffsets(multiline);
-
-        // Track which Y levels have already found an object
         Set<Integer> foundAtYLevel = new HashSet<>();
-        BlockPos.MutableBlockPos checkPos = pos.mutable();
-        BlockPos.MutableBlockPos checkPos2e = pos2e.mutable();
 
-        for (int i = 1; i <= range; i += 1) {
-            // If we've found objects at all Y levels, we can stop scanning this angle
-            if (foundAtYLevel.size() == yOffsets.size()) {
-                break;
+        for (int yOffset : yOffsets) {
+            if (foundAtYLevel.contains(yOffset)) continue;
+            
+            // Entity detection - still use AABB sweeping
+            if (mode != 1 && !foundAtYLevel.contains(yOffset)) {
+                DetectionResult entityResult = scanEntitiesAlongRay(world, pos2e, direction, range, mode, yOffset, angle2);
+                if (entityResult != null) {
+                    results.add(entityResult);
+                    foundAtYLevel.add(yOffset);
+                }
             }
 
-            // Scan all Y levels for this distance
-            for (int yOffset : yOffsets) {
-                // Skip this Y level if we already found something
-                if (foundAtYLevel.contains(yOffset)) {
-                    continue;
-                }
+            // Raycast for blocks
+            if (mode == 0 || mode == 1) {
+                Vec3 startPos = Vec3.atCenterOf(pos).add(0, yOffset, 0);
+                Vec3 endPos = startPos.add(direction.scale(range));
 
-                // Calculate position using rotated direction vector
-                int blockX = pos.getX() + (int) Math.round(direction.x * i);
-                int blockY = pos.getY() + yOffset + (int) Math.round(direction.y * i);
-                int blockZ = pos.getZ() + (int) Math.round(direction.z * i);
+                BlockHitResult hit = world.clip(new ClipContext(
+                        startPos,
+                        endPos,
+                        ClipContext.Block.VISUAL,
+                        ClipContext.Fluid.NONE,
+                        null
+                ));
 
-                int blockX2e = pos2e.getX() + (int) Math.round(direction.x * i);
-                int blockY2e = pos2e.getY() + yOffset + (int) Math.round(direction.y * i);
-                int blockZ2e = pos2e.getZ() + (int) Math.round(direction.z * i);
+                if (hit.getType() == HitResult.Type.BLOCK) {
+                    BlockState blockState = world.getBlockState(hit.getBlockPos());
+                    if (!blockState.isAir()) {
+                        double distance = startPos.distanceTo(hit.getLocation());
+                        String blockName = blockState.getBlock().getName().getString();
+                        results.add(new DetectionResult(distance, "Block", blockName, yOffset, angle));
+                        foundAtYLevel.add(yOffset);
 
-                checkPos.set(blockX, blockY, blockZ);
-                checkPos2e.set(blockX2e, blockY2e, blockZ2e);
-                BlockState blockState = world.getBlockState(checkPos);
-
-                // Check for blocks (modes 0 and 1)
-                if ((mode == 0 || mode == 1) && !blockState.isAir()) {
-                    String blockName = blockState.getBlock().getName().getString();
-                    DetectionResult result = new DetectionResult(
-                            i,
-                            "Block",
-                            blockName,
-                            yOffset,
-                            angle
-                    );
-                    results.add(result);
-                    foundAtYLevel.add(yOffset);
-                    continue;
-                }
-
-                // Check for entities (modes 0, 2, 3, 4, 5)
-                if (mode != 1) {
-                    AABB boundingBox = new AABB(checkPos2e).inflate(0.1);
-                    List<Entity> entities = world.getEntitiesOfClass(Entity.class, boundingBox);
-
-                    for (Entity entity : entities) {
-                        String entityName = getEntityDisplayName(entity);
-                        String entityType = getEntityType(entity);
-                        DetectionResult result = null;
-
-                        switch (mode) {
-                            case 0: // All entities + blocks
-                                result = new DetectionResult(i, entityType, entityName, yOffset, angle);
-                                break;
-
-                            case 2: // Any entity except player
-                                if (!(entity instanceof Player)) {
-                                    result = new DetectionResult(i, entityType, entityName, yOffset, angle);
-                                }
-                                break;
-
-                            case 3: // Only player
-                                if (entity instanceof Player) {
-                                    result = new DetectionResult(i, "Player", entityName, yOffset, angle);
-                                }
-                                break;
-
-                            case 4: // Only mobs
-                                if (entity instanceof Mob) {
-                                    result = new DetectionResult(i, "Mob", entityName, yOffset, angle);
-                                }
-                                break;
-
-                            case 5: // Any entity including player
-                                result = new DetectionResult(i, entityType, entityName, yOffset, angle);
-                                break;
-                        }
-
-                        if (result != null) {
-                            results.add(result);
-                            foundAtYLevel.add(yOffset);
-                            break;
-                        }
+                        if (mode == 1) continue; // Block-only mode
                     }
                 }
+
             }
         }
 
         return results;
     }
 
+    private DetectionResult scanEntitiesAlongRay(Level world, BlockPos pos2e, Vec3 direction, int range, int mode, int yOffset, int angle) {
+        // Use AABB sweep for entities (since clip() doesn't detect entities)
+        for (int i = 1; i <= range; i++) {
+            int blockX = pos2e.getX() + (int) Math.round(direction.x * i);
+            int blockY = pos2e.getY() + yOffset + (int) Math.round(direction.y * i);
+            int blockZ = pos2e.getZ() + (int) Math.round(direction.z * i);
+
+            BlockPos.MutableBlockPos checkPos = new BlockPos(blockX, blockY, blockZ).mutable();
+            AABB boundingBox = new AABB(checkPos).inflate(0.1);
+            List<Entity> entities = world.getEntitiesOfClass(Entity.class, boundingBox);
+
+            for (Entity entity : entities) {
+                if (shouldDetectEntity(entity, mode)) {
+                    String entityName = getEntityDisplayName(entity);
+                    String entityType = getEntityType(entity);
+                    return new DetectionResult(i, entityType, entityName, yOffset, angle);
+                }
+            }
+        }
+        return null;
+    }
+
+    private boolean shouldDetectEntity(Entity entity, int mode) {
+        return switch (mode) {
+            case 0 -> true; // All
+            case 2 -> !(entity instanceof Player); // No player
+            case 3 -> entity instanceof Player; // Only player
+            case 4 -> entity instanceof Mob; // Only mobs
+            case 5 -> true; // All entities
+            default -> false;
+        };
+    }
+
     // Calculate angle from direction vector (for proper output angle)
-    private static int calculateAngleFromDirection(Vec3 direction) {
+    private static int calculateAngleFromDirection(ppVec3 direction) {
         // Calculate angle in degrees from the direction vector
         double angle = Math.toDegrees(Math.atan2(direction.z, direction.x));
 
