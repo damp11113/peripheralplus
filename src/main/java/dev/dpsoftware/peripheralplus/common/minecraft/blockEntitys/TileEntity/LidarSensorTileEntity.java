@@ -1,6 +1,7 @@
 package dev.dpsoftware.peripheralplus.common.minecraft.blockEntitys.TileEntity;
 
 import dan200.computercraft.api.peripheral.IPeripheral;
+import dev.dpsoftware.peripheralplus.PeripheralPlus;
 import dev.dpsoftware.peripheralplus.ppVec3;
 import dev.dpsoftware.peripheralplus.common.minecraft.blockEntitys.PeripheralBlockEntity;
 import dev.dpsoftware.peripheralplus.ppQuat;
@@ -119,7 +120,7 @@ public class LidarSensorTileEntity extends BlockEntity implements PeripheralBloc
 
         for (int yOffset : yOffsets) {
             if (foundAtYLevel.contains(yOffset)) continue;
-            
+
             // Entity detection - still use AABB sweeping
             if (mode != 1 && !foundAtYLevel.contains(yOffset)) {
                 DetectionResult entityResult = scanEntitiesAlongRay(world, pos2e, direction, range, mode, yOffset, angle2);
@@ -131,11 +132,15 @@ public class LidarSensorTileEntity extends BlockEntity implements PeripheralBloc
 
             // Raycast for blocks
             if (mode == 0 || mode == 1) {
-                Vec3 startPos = Vec3.atCenterOf(pos).add(0, yOffset, 0);
-                Vec3 endPos = startPos.add(direction.scale(range));
+                Vec3 startPos = Vec3.atCenterOf(pos); // start at the block center (safer than corner)
+
+                // push start position a little bit along the ray direction
+                Vec3 safeStart = startPos.add(direction.normalize().scale(1.25));
+
+                Vec3 endPos = startPos.add(direction.scale(range)).add(0, yOffset, 0);
 
                 BlockHitResult hit = world.clip(new ClipContext(
-                        startPos,
+                        safeStart,
                         endPos,
                         ClipContext.Block.VISUAL,
                         ClipContext.Fluid.NONE,
